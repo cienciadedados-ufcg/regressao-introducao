@@ -1,0 +1,191 @@
+---
+title: "Regressão Linear"
+author: "Nazareno Andrade"
+output: 
+  html_notebook:
+    theme: readable
+    fig_width: 7
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = FALSE)
+theme_set(theme_bw())
+```
+
+## Funções lineares
+
+Esse código aplica uma função linear $y = ax + b$ na variável `x` de um data frame:
+
+```{r linear}
+dados = tibble(x = 1:20)
+
+linear = function(x){
+  a = 3
+  b = -5
+  
+  return(a*x + b)
+}
+
+resultado_linear = dados %>%
+  mutate(y = linear(x), funcao = "linear")
+
+resultado_linear %>%
+  ggplot(aes(x = x, y = y)) + geom_point() + geom_line()
+```
+
+Esse código gera e plota um data frame aplicando 3 funções lineares com parâmetros (coeficientes) diferentes à mesma variável `x`. Os coeficientes são definidos no tibble `funcoes`. Mude-os para entender melhor o efeito de diferentes valores (e sinais!) de `a` e `b`.
+
+```{r lineares}
+dados = tibble(x = 1:20)
+
+linear = function(x = 0, a = 3, b = -5){
+  return(a*x + b)
+}
+
+cria_linear = function(a, b){
+  return(function(x) a*x + b)
+}
+
+funcoes = tribble(
+   ~a, ~b, 
+    1,  3, 
+    2,  2, 
+    3,  1
+) 
+
+d = funcoes %>% 
+  rowwise() %>% # para cada linha da tabela, que contém um a e um b
+  do(tibble(x = dados$x, 
+            y = linear(dados$x, .$a, .$b), # aplica a função a dados$x
+            função = paste0("y = ", .$a, "x + ",.$b)))
+
+d %>%
+  ggplot(aes(x = x, y = y, colour = `função`)) + 
+  geom_line()
+```
+
+## Uma função polinomial
+
+Testemos agora uma função $y = ax^c + b$. Tal como no exemplo acima, você pode configurar diferentes valores para $a$, $b$ e $c$ e comparar as funções resultantes. Teste diferentes sinais e repare no efeito de mudar os valores de a, b ou c no resultado da função.
+
+```{r polinomiais}
+dados = tibble(x = 1:20)
+
+polinomial = function(x = 0, a = 3, b = -5, c = 2){
+  return(a*x^c + b)
+}
+
+funcoes = tibble(a = c(.1, .2, .3), 
+                 b = c(-3, -2, -1), 
+                 c = c(2, 2.3, 2.7))
+
+d = funcoes %>% 
+  rowwise() %>% # para cada linha da tabela
+  do(tibble(x = dados$x, 
+            y = polinomial(dados$x, .$a, .$b, .$c), # aplica a função a dados$x
+            função = paste0("y = ", .$a, "x^", .$c, " + ",.$b)))
+
+d %>%
+  ggplot(aes(x = x, y = y, colour = `função`)) + 
+  geom_line()
+```
+
+### Comparando
+
+Compare uma função linear e polinomial. No limite, quem tem o maior valor? Quem tem o maior crescimento? Para todo valor de $dx$? (Lembra que variação de y em uma região de x é a derivada de y em função de x ;))
+
+```{r poli_vs_linear}
+dados = tibble(x = 1:20)
+
+linear = function(x = 0, a = 3, b = -5){
+  return(a*x + b)
+}
+
+polinomial = function(x = 0, a = 3, b = -5, c = 2){
+  return(a*x^c + b)
+}
+
+resultado_linear = dados %>% 
+  mutate(y = linear(x), 
+         funcao = "linear") 
+
+resultado_poli = dados %>% 
+  mutate(y = polinomial(x), 
+         funcao = "polinomial") 
+
+aplicacao_funcoes = bind_rows(resultado_linear, resultado_poli)
+
+aplicacao_funcoes %>% 
+  ggplot(aes(x = x, y = y, color = funcao)) + 
+  geom_point() + 
+  geom_line()
+```
+
+## E a exponencial?
+
+Mesma lógica das anteriores
+
+```{r exponenciais}
+dados = tibble(x = 1:20)
+
+exponencial = function(x = 0, a = 3, b = -5, c = 2){
+  return(a*2^(c*x) + b) # 2 poderia ser um novo coeficiente, mas já temos suficientes
+}
+
+funcoes = tibble(a = c(.1, .1, 1), 
+                 b = c(-3, -2, 4), 
+                 c = c(.2, .3, -.4))
+
+d = funcoes %>% 
+  rowwise() %>% # para cada linha da tabela
+  do(tibble(x = dados$x, 
+            y = exponencial(dados$x, .$a, .$b, .$c), # aplica a função a dados$x
+            função = paste0("y = ", .$a, "2^x*", .$c, " + ",.$b)))
+
+d %>%
+  ggplot(aes(x = x, y = y, colour = `função`)) + 
+  geom_line()
+```
+
+### Comparando as 3
+
+Mexa nos coeficientes e veja o efeito...
+
+```{r comparando_todas}
+dados = tibble(x = 1:15)
+
+linear = function(x = 0, a = 3, b = 0){
+  return(a*x + b)
+}
+
+polinomial = function(x = 0, a = 3, b = 0, c = 2){
+  return(a*x^c + b)
+}
+
+exponencial = function(x = 0, a = .003, b = 0, c = 1.2){
+  return(a*2^(c*x) + b) # 2 poderia ser um novo coeficiente, mas já temos suficientes
+}
+
+resultado_linear = dados %>% 
+  mutate(y = linear(x), 
+         funcao = "linear") 
+
+resultado_poli = dados %>% 
+  mutate(y = polinomial(x), 
+         funcao = "polinomial") 
+
+resultado_exp = dados %>% 
+  mutate(y = exponencial(x), 
+         funcao = "exponencial") 
+
+aplicacao_funcoes = bind_rows(resultado_linear, resultado_poli, resultado_exp)
+
+aplicacao_funcoes %>% 
+  ggplot(aes(x = x, y = y, color = funcao)) + 
+  geom_point() + 
+  geom_line() #+ scale_y_log10()
+  
+```
