@@ -29,6 +29,67 @@ glimpse(profs)
 
 
 ```{r}
+m1 = lm(score ~ ., data = profs)
+
+tidy(m1, conf.int = TRUE) %>% select(-statistic, -p.value, -std.error)
+
+glance(m1)
+```
+
+O melhor modelo linear encontrado para os dados é da forma:
+
+score = 4.3 - 0.007 * age + 0.223 * gender(male = 1) + 0.047 * beleza - 0.015 * outfit(informal = 1) - 0.2 * pic_color(colorida = 1)
+
+Efeito da idade é negativo e pequeno: professores mais velhos tendem a ser pior avalidos, mas a diferença esperada entre um professor de 30 e outro de 75 anos é de 0.315. Homens tendem a ter uma avaliação melhor também, porém com efeito pequeno também. A beleza está associada com uma melhor avaliação didática dos professores, com um efeito um pouco maior: a diferença esperada na didática do professor com menor e maior beleza segundo os alunos é de 0.3. Esse é maior efeito dentre as variáveis estudadas. 
+
+```{r}
+glance(m1)
+```
+
+```{r}
+para_plotar = profs %>% 
+  data_grid(bty_avg = seq_range(bty_avg, 3), 
+            age = seq_range(age, 3), 
+            gender = "male", 
+            pic_outfit = c("formal", "not formal"), 
+            pic_color = "color") %>% 
+  add_predictions(m1)
+
+para_plotar %>% 
+  ggplot(aes(x = bty_avg, y = pred, group = age, color = age)) + 
+  geom_line() + 
+  facet_wrap(~ pic_outfit)
+```
+
+
+
+```{r}
+m1 %>% 
+  tidy(conf.int = TRUE) %>%
+  filter(term != "(Intercept)") %>% 
+  ggplot(aes(estimate, reorder(term, estimate), 
+             xmin = conf.low, 
+             xmax = conf.high, 
+             height = 0.1)) +
+  geom_vline(xintercept = 0, color = "grey") +
+  # geom_point() +
+  geom_errorbarh()
+```
+
+```{r}
+glance(m1)
+```
+
+
+Variável DUMMY genero: 0 ou 1
+Se female = 0
+   male = 1
+   
+bty_avg = 4.65 - 0.41 * genero
+
+
+
+```{r}
 profs %>% 
     ggplot(aes(x = age, y = score)) + 
     geom_count()

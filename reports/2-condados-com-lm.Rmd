@@ -1,5 +1,5 @@
 ---
-title: "Regressão Linear"
+title: "Regressão Linear, agora com lm"
 author: "Nazareno Andrade"
 output: 
   html_notebook:
@@ -7,15 +7,12 @@ output:
     fig_width: 7
     toc: true
     toc_float: true
-
 ---
 
 ```{r setup, message=FALSE, warning=FALSE}
 library(openintro)
 library(tidyverse)
 library(tidymodels)
-library(modelr)
-library(broom)
 theme_set(theme_bw())
 ```
 
@@ -31,34 +28,33 @@ counties = county_complete %>%
 glimpse(counties)
 ```
 
-
 # Agora automaticamente
 
-lm  == linear model
+lm == linear model
 
 ```{r}
 counties %>% 
   ggplot(aes(x = hs_grad, y = poverty)) + 
-  geom_point(alpha = 0.4) + 
-  geom_smooth(method = "lm", se = FALSE)
+  geom_point(alpha = 0.4, size = .5) + 
+  # geom_smooth(method = "lm", se = FALSE)
+    NULL
 ```
 
-
-
 ```{r}
-mod1 <- lm(poverty ~ hs_grad, 
-          data = counties)
+mod1 <- lm(poverty ~ hs_grad, # poverty = b0 + b1*hs_grad
+           data = counties)
 
 # sintaxe base R, que não usaremos
 # summary(mod)
-# confint(mod)
 
 # sintaxe broom / tidymodels: 
 tidy(mod1)
 glance(mod1) 
 ```
 
-Estimativas/previsões do modelo:
+Função retornada foi $poverty = 71.3 - 0.642 * hs\_grad$
+
+## Estimativas/previsões do modelo
 
 ```{r}
 mod1 %>% 
@@ -68,14 +64,21 @@ mod1 %>%
 ```{r}
 mod1 %>% 
   augment(counties) %>% 
-  ggplot(mapping = aes(x = hs_grad, y = poverty)) + 
-  geom_point(alpha = 0.4, size = .1) + 
+  ggplot(mapping = aes(x = hs_grad)) + 
+  geom_point(aes(y = poverty), alpha = 0.4, size = .1) + 
   geom_line(aes(y = .fitted), colour = "red")  + 
-  # geom_abline(intercept = 75, slope = -.72, color  = "darkblue") 
   NULL
 ```
 
-Resíduos do modelo:
+## Inferência
+
+```{r}
+mod1 %>% 
+    tidy(conf.int = T, conf.level = .95) %>% 
+    select(-p.value)
+```
+
+## Resíduos
 
 ```{r}
 mod1 %>% 
@@ -85,9 +88,12 @@ mod1 %>%
   geom_hline(yintercept = 0, colour = "blue")
 ```
 
--------------
+------------------------------------------------------------------------
+
+## 
+
+## Exemplo de relato
 
 A conclusão a eque chegamos com um modelo assim é algo como:
 
-> Regressão linear simples foi utilizada para analisar a associação entre VarIndep1 e VarResposta. Um modelo no formato VarDep = XXX.VarIndep1 + YYY explica XX,XX% da variância da variável de resposta (R2 = XX,XX). O aumento de 1 unidade de VarIndep1 medida como/em [unidade] produz uma mudança de xxx em VarDep. Portanto...
-
+> Regressão linear simples foi utilizada para analisar a associação entre escolaridade (medida como % de pessoas que completou o ensino médio) e pobreza (% de pessoas abaixo da linha da pobreza) nos condados. Um modelo no formato pobreza = 73 -0.642\*escolaridade explica 40% da variância da variável de resposta (R2 = 0,40). O aumento de 1% da escolaridade em um condado produz uma decréscimo de 0,642% (IC 95% [0,61; 0,67]) no valor esperado da pobreza. Portanto...
