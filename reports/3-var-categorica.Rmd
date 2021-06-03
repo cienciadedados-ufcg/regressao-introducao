@@ -1,0 +1,94 @@
+---
+title: "Sorrisos e leniência"
+output: html_notebook
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggbeeswarm)
+library(hrbrthemes)
+
+library(tidymodels)
+
+theme_set(theme_ipsum_rc())
+```
+
+RESPOSTA = f(EXPLICATIVA_1)
+
+Y = b_0 + b_1 \* X1
+
+```{r}
+avaliacoes = 
+    read_csv(here::here("data/leniency.csv"), col_types = "cdc")
+
+glimpse(avaliacoes)
+```
+
+```{r}
+avaliacoes %>% 
+  count(smile)
+```
+
+Y = b_0 + b_1 \* X1
+
+Y = b_0 + b_1 \* 0 = b_0 = 5 Y = b_0 + b_1 \* 1 = b_0 + b_1 = 5 - 2
+
+Codificação em variável DUMMY
+
+```{r}
+avaliacoes %>% 
+  ggplot(aes(x = leniency,  y = after_stat(density))) + 
+  facet_wrap(~ with_smile) + 
+  geom_histogram(binwidth = 1)
+```
+
+```{r}
+avaliacoes %>% 
+  ggplot(aes(x = with_smile, y = leniency)) + 
+  geom_quasirandom(width = .3)
+```
+
+## 2 categorias
+
+```{r}
+avaliacoes = avaliacoes %>% 
+  mutate(with_smile_fct = factor(with_smile) %>% relevel(ref = "yes"))
+
+mod_sorriso = lm(leniency ~ with_smile_fct, data = avaliacoes)
+
+tidy(mod_sorriso, conf.int = T)
+glance(mod_sorriso)
+```
+
+Y = 4.11 + 0.94 \* (with_smile == "no")
+
+```{r}
+mod_sorriso %>% 
+  augment(avaliacoes) %>% 
+  ggplot(aes(x = with_smile)) + 
+  geom_point(aes(y = .fitted), color = "red", size = 3) + 
+  geom_quasirandom(aes(y = leniency))
+```
+
+## Mais categorias
+
+Y = b_0 + b_1 \* SORRISO_TIPO_1 + b_2 \* SORRISO_TIPO_2 + + b_3 \* SORRISO_TIPO_3
+
+Y = b_0 + b_1 \* 0 + b_2 \* 1 + + b_3 \* 0 = b_0 + b_2
+
+```{r}
+avaliacoes = avaliacoes %>% 
+  mutate(smile_fct = factor(smile) %>% relevel(ref = "no smile (control)"))
+
+mod_sorrisos = lm(leniency ~ smile_fct, data = avaliacoes)
+
+tidy(mod_sorrisos, conf.int = T)
+glance(mod_sorrisos)
+```
+
+Y = 4.11 + 1.2 \* SORRISO_FALSO + .79 \* SORRISO_SENTIDO + .79 \* SORRISO_MISERÁVEL
+
+```{r}
+tidy(mod_sorrisos, conf.int = T) %>% select(-p.value)
+```
